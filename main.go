@@ -27,6 +27,7 @@ const (
 	cmdToggle    = 1001
 	cmdTest      = 1002
 	cmdQuit      = 1003
+	cmdSettings  = 1004
 	popTimerID   = 1
 	wheelTimerID = 2
 	trayTimerID  = 3
@@ -220,11 +221,11 @@ func mouseHookProc(nCode int32, wParam uintptr, ms *MSLLHOOKSTRUCT) uintptr {
 		switch uint32(wParam) {
 		case WM_LBUTTONDOWN:
 			if !app.dragging {
-				alt := isKeyDown(VK_MENU) || isKeyDown(vkG)
-				ctrl := isKeyDown(VK_CONTROL)
-				if alt || ctrl {
+				pingDown := isPingTriggerDown()
+				emoteDown := isEmoteTriggerDown()
+				if pingDown || emoteDown {
 					app.dragging = true
-					app.emoteMode = ctrl && !alt
+					app.emoteMode = emoteDown && !pingDown
 					app.anchorX = ms.Pt.X
 					app.anchorY = ms.Pt.Y
 					app.curX = ms.Pt.X
@@ -296,7 +297,7 @@ func renderWheelNow() {
 		app.hoverStart = now
 		app.hoverIdx = app.activeIdx
 		if app.activeIdx >= 0 && app.dragging {
-			playSoundVolume("assets/sounds/button.wav", .35)
+			playSoundVolume("assets/sounds/button.wav", hoverVolume())
 		}
 	}
 	u := cssEase(now.Sub(app.hoverStart).Seconds()/.1, .25, .1, .25, 1)
@@ -358,9 +359,12 @@ func showTrayMenu(hwnd uintptr) {
 	if app.enabled {
 		flags |= MF_CHECKED
 	}
-	lblEnabled, _ := syscall.UTF16PtrFromString("Enabled (Alt/G+Click: Ping | Ctrl+Click: Emote)")
+	lblSettings, _ := syscall.UTF16PtrFromString("Settings...")
+	lblEnabled, _ := syscall.UTF16PtrFromString("Enabled")
 	lblTest, _ := syscall.UTF16PtrFromString("Test Ping Now")
 	lblQuit, _ := syscall.UTF16PtrFromString("Quit lolPing Lite")
+	pAppendMenuW.Call(menu, MF_STRING, cmdSettings, uintptr(unsafe.Pointer(lblSettings)))
+	pAppendMenuW.Call(menu, MF_SEPARATOR, 0, 0)
 	pAppendMenuW.Call(menu, flags, cmdToggle, uintptr(unsafe.Pointer(lblEnabled)))
 	pAppendMenuW.Call(menu, MF_STRING, cmdTest, uintptr(unsafe.Pointer(lblTest)))
 	pAppendMenuW.Call(menu, MF_SEPARATOR, 0, 0)
@@ -454,12 +458,17 @@ func wndProc(hwnd uintptr, msg uint32, wParam, lParam uintptr) uintptr {
 		}
 		return 0
 	case wmTrayIcon:
-		if event := uint32(lParam) & 0xFFFF; event == WM_RBUTTONUP || event == WM_LBUTTONUP || event == WM_CONTEXTMENU || event == NIN_SELECT || event == NIN_KEYSELECT {
+		event := uint32(lParam) & 0xFFFF
+		if event == WM_LBUTTONUP || event == NIN_SELECT {
+			openSettingsWindow()
+		} else if event == WM_RBUTTONUP || event == WM_CONTEXTMENU || event == NIN_KEYSELECT {
 			showTrayMenu(hwnd)
 		}
 		return 0
 	case WM_COMMAND:
 		switch uint32(wParam & 0xFFFF) {
+		case cmdSettings:
+			openSettingsWindow()
 		case cmdToggle:
 			app.enabled = !app.enabled
 			if !app.enabled {
@@ -520,6 +529,7 @@ func main() {
 	}
 	go runVsyncPacer()
 	defer close(app.vsyncStop)
+	loadConfig()
 	loadSlots()
 	app.wheelSurf.buildWheelBase()
 	prewarmShadows()

@@ -182,7 +182,7 @@ func getCachedWav(path string, volume float64) (cachedWav, bool) {
 	return c, true
 }
 
-func playSoundAsset(path string) { playSoundVolume(path, .7) }
+func playSoundAsset(path string) { playSoundVolume(path, pingVolume()) }
 func playSoundVolume(path string, volume float64) {
 	if volume <= 0 {
 		return
