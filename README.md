@@ -1,35 +1,31 @@
-# lolPing Lite (Windows Native / Go)
+# lolPing Lite
 
-A lightweight, native Windows rewrite of the desktop *League of Legends* Ping & Emote Wheel overlay written in pure Go (Win32 API, zero CGO, zero Chromium/Electron).
+Bản làm lại siêu nhẹ cho Windows của **lolPing** — thả vòng Ping & Emote kiểu Liên Minh Huyền Thoại ngay trên màn hình desktop, chỉ tốn khoảng **40–50 MB RAM** thay vì ~600 MB của bản Electron.
 
-## Highlights
+Mình viết bản này bằng Go thuần Win32 vì máy 16 GB RAM mở lắm tab Chrome + VS Code quá, muốn giữ lại con app ping vui tay mà không bị ngốn RAM hay tụt FPS.
 
-- **Ultra-low memory footprint:** ~40–50 MB RAM in a single native process (down from ~626 MB across 6 Electron/Chromium processes).
-- **High-refresh-rate native VSync:** Driven by `dwmapi.dll` (`DwmFlush`) to match 120Hz / 144Hz / 165Hz / 240Hz monitors with 0% CPU usage when idle.
-- **Fast software renderer:** Cached wheel base & per-sector wedge tables, fixed-point 16.16 bilinear scaling, pre-composited drop shadows, 1D radial LUT shockwaves, pooled overlay windows, and multi-core parallel effect rendering (~0.58 ms/frame wheel, ~0.80 ms/frame for 5 simultaneous pings).
-- **Async WAV audio:** Pre-scaled PCM cache played asynchronously via `winmm.dll` (`waveOut`) without blocking the UI thread.
-- **Local-only:** Focused purely on local desktop Ping Wheel & Emote Wheel (no multiplayer rooms).
+## Cách dùng
 
-## Controls
+Chạy file `lolPingLite.exe`, app sẽ nằm gọn dưới khay hệ thống (System Tray):
 
-- **Hold `Alt` or `G` + Left Click (drag & release):** Open the 8-direction **Ping Wheel** and trigger a ping with sound & animation.
-- **Hold `Ctrl` + Left Click (drag & release):** Open the **Emote Wheel**.
-- **Right Click while dragging:** Cancel (`BACK`).
-- **System Tray icon:** Right-click to toggle Enabled/Paused, trigger a Test Ping, or Quit.
+- **Giữ `Alt` (hoặc `G`) + Chuột trái rồi kéo:** Mở vòng Ping 8 hướng, thả chuột để ping kèm âm thanh.
+- **Giữ `Ctrl` + Chuột trái rồi kéo:** Mở vòng Emote.
+- **Chuột phải khi đang kéo:** Hủy (`BACK`).
+- **Chuột phải icon dưới khay hệ thống:** Bật/tắt nhanh, test ping hoặc thoát app.
 
-## Build from Source (Windows)
+*(Bản này chỉ chạy local trên máy cho gọn, không có tính năng phòng multiplayer.)*
 
-Requires **Go 1.24+** on Windows (`amd64`).
+## Tự build từ mã nguồn
+
+Cần cài sẵn **Go 1.24+** trên Windows:
 
 ```powershell
-go test ./...
-go vet ./...
 go build -ldflags="-H windowsgui -s -w" -o lolPingLite.exe .
 ```
 
-> Keep the `assets/emotes/*.frames` files beside `lolPingLite.exe` if you want animated emote playback.
+> Nhớ để thư mục `assets/emotes` cạnh `lolPingLite.exe` nếu muốn emote chạy được animation.
 
-## Credits & Attribution
+## Credit
 
-- **Original Project & Design:** Ported from and inspired by **[darrenprx/lolPing](https://github.com/darrenprx/lolPing)** created by **Danrui Meng (`darrenprx`)**. Wheel geometry, visual styling, ping/emote timelines, sound mappings, and extracted desktop overlay assets originate from `darrenprx/lolPing`.
-- **Game Assets:** *League of Legends* ping icons, emotes, and sound effects are the property of **Riot Games, Inc.** This is an unofficial, non-commercial fan desktop utility and is not affiliated with or endorsed by Riot Games.
+- Ý tưởng, thiết kế vòng ping, animation và toàn bộ asset gốc đều từ dự án **[darrenprx/lolPing](https://github.com/darrenprx/lolPing)** của **Danrui Meng (`darrenprx`)** — cảm ơn tác giả rất nhiều vì một món đồ chơi desktop cực kỳ vui!
+- Hình ảnh và âm thanh *League of Legends* thuộc bản quyền của **Riot Games, Inc.** Dự án này chỉ là bản fan-made phi thương mại.
