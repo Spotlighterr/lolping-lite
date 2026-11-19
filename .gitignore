@@ -1,0 +1,5 @@
+*.exe
+*.log
+.tmp/
+.upstream/
+_archive/
