@@ -1,31 +1,31 @@
 # lolPing Lite
 
-Bản làm lại siêu nhẹ cho Windows của **lolPing** — thả vòng Ping & Emote kiểu Liên Minh Huyền Thoại ngay trên màn hình desktop, chỉ tốn khoảng **40–50 MB RAM** thay vì ~600 MB của bản Electron.
+A lightweight Windows-only rewrite of **lolPing** — drop *League of Legends* pings and emotes anywhere on your desktop while using only **~40–50 MB of RAM** instead of ~600 MB from Electron.
 
-Mình viết bản này bằng Go thuần Win32 vì máy 16 GB RAM mở lắm tab Chrome + VS Code quá, muốn giữ lại con app ping vui tay mà không bị ngốn RAM hay tụt FPS.
+I built this in pure Go (Win32) because my 16 GB laptop is already full of Chrome tabs and VS Code windows, and I still wanted to spam pings on my desktop without eating RAM or dropping frames.
 
-## Cách dùng
+## How to use
 
-Chạy file `lolPingLite.exe`, app sẽ nằm gọn dưới khay hệ thống (System Tray):
+Run `lolPingLite.exe` and it will sit quietly in your system tray:
 
-- **Giữ `Alt` (hoặc `G`) + Chuột trái rồi kéo:** Mở vòng Ping 8 hướng, thả chuột để ping kèm âm thanh.
-- **Giữ `Ctrl` + Chuột trái rồi kéo:** Mở vòng Emote.
-- **Chuột phải khi đang kéo:** Hủy (`BACK`).
-- **Chuột phải icon dưới khay hệ thống:** Bật/tắt nhanh, test ping hoặc thoát app.
+- **Hold `Alt` (or `G`) + Left Click & drag:** Open the 8-direction Ping Wheel, release to ping with sound.
+- **Hold `Ctrl` + Left Click & drag:** Open the Emote Wheel.
+- **Right Click while dragging:** Cancel (`BACK`).
+- **Right Click the tray icon:** Pause/resume, test a ping, or quit.
 
-*(Bản này chỉ chạy local trên máy cho gọn, không có tính năng phòng multiplayer.)*
+*(Local desktop only — no multiplayer rooms, just the simple ping & emote fun.)*
 
-## Tự build từ mã nguồn
+## Build it yourself
 
-Cần cài sẵn **Go 1.24+** trên Windows:
+You just need **Go 1.24+** on Windows:
 
 ```powershell
 go build -ldflags="-H windowsgui -s -w" -o lolPingLite.exe .
 ```
 
-> Nhớ để thư mục `assets/emotes` cạnh `lolPingLite.exe` nếu muốn emote chạy được animation.
+> Keep the `assets/emotes` folder next to `lolPingLite.exe` so animated emotes can play.
 
-## Credit
+## Credits
 
-- Ý tưởng, thiết kế vòng ping, animation và toàn bộ asset gốc đều từ dự án **[darrenprx/lolPing](https://github.com/darrenprx/lolPing)** của **Danrui Meng (`darrenprx`)** — cảm ơn tác giả rất nhiều vì một món đồ chơi desktop cực kỳ vui!
-- Hình ảnh và âm thanh *League of Legends* thuộc bản quyền của **Riot Games, Inc.** Dự án này chỉ là bản fan-made phi thương mại.
+- The original idea, wheel design, animations, and assets come from **[darrenprx/lolPing](https://github.com/darrenprx/lolPing)** by **Danrui Meng (`darrenprx`)** — huge thanks for making such a fun desktop toy!
+- All *League of Legends* icons, emotes, and sound effects belong to **Riot Games, Inc.** This is an unofficial, non-commercial fan project.
