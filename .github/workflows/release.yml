@@ -1,0 +1,47 @@
+name: Release Windows EXE
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Test & Vet
+        shell: pwsh
+        run: |
+          go test ./...
+          go vet ./...
+
+      - name: Build lolPingLite.exe & ZIP
+        shell: pwsh
+        run: |
+          go build -ldflags="-H windowsgui -s -w" -o lolPingLite.exe .
+          New-Item -ItemType Directory -Force -Path dist/assets/emotes | Out-Null
+          Copy-Item lolPingLite.exe dist/
+          Copy-Item assets/emotes/*.frames dist/assets/emotes/
+          Copy-Item README.md dist/
+          Compress-Archive -Path dist/* -DestinationPath lolPingLite-windows-amd64.zip -Force
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          files: |
+            lolPingLite.exe
+            lolPingLite-windows-amd64.zip

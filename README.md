@@ -4,6 +4,13 @@ A lightweight Windows-only rewrite of **lolPing** — drop *League of Legends* p
 
 I built this in pure Go (Win32) because my 16 GB laptop is already full of Chrome tabs and VS Code windows, and I still wanted to spam pings on my desktop without eating RAM or dropping frames.
 
+## Download
+
+Grab the latest Windows build from **[Releases](https://github.com/Spotlighterr/lolping-lite/releases/latest)**:
+
+- **`lolPingLite-windows-amd64.zip`** *(recommended)* — unzip and run `lolPingLite.exe` (includes animated emote frames).
+- **`lolPingLite.exe`** — single standalone file (ping wheel + static emotes).
+
 ## How to use
 
 Run `lolPingLite.exe` and it will sit quietly in your system tray:
