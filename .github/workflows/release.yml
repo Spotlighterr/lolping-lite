@@ -1,7 +1,9 @@
-name: Release Windows EXE
+name: Build & Release (Windows + macOS)
 
 on:
   push:
+    branches:
+      - 'feat/macos-support'
     tags:
       - 'v*'
   workflow_dispatch:
@@ -10,7 +12,7 @@ permissions:
   contents: write
 
 jobs:
-  build-release:
+  build-windows:
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -37,7 +39,7 @@ jobs:
           Copy-Item README.md dist/
           Compress-Archive -Path dist/* -DestinationPath lolPingLite-windows-amd64.zip -Force
 
-      - name: Create GitHub Release
+      - name: Upload Windows Release Assets
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
@@ -45,3 +47,62 @@ jobs:
           files: |
             lolPingLite.exe
             lolPingLite-windows-amd64.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build Apple Silicon (arm64) & Intel (amd64)
+        run: |
+          GOOS=darwin GOARCH=arm64 CGO_ENABLED=1 go build -ldflags="-s -w" -o lolPingLite-arm64 .
+          GOOS=darwin GOARCH=amd64 CGO_ENABLED=1 go build -ldflags="-s -w" -o lolPingLite-amd64 .
+          lipo -create -output lolPingLite-universal lolPingLite-arm64 lolPingLite-amd64
+          lipo -info lolPingLite-universal
+
+      - name: Package .app Bundles (arm64, amd64, universal)
+        run: |
+          make_bundle() {
+            local arch="$1"
+            local bin="$2"
+            local app="dist-${arch}/lolPingLite.app"
+            mkdir -p "${app}/Contents/MacOS" "${app}/Contents/Resources/assets/emotes"
+            cp "${bin}" "${app}/Contents/MacOS/lolPingLite"
+            chmod +x "${app}/Contents/MacOS/lolPingLite"
+            cp assets/emotes/*.frames "${app}/Contents/Resources/assets/emotes/"
+            printf '%s\n' \
+              '<?xml version="1.0" encoding="UTF-8"?>' \
+              '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+              '<plist version="1.0"><dict>' \
+              '  <key>CFBundleName</key><string>lolPing Lite</string>' \
+              '  <key>CFBundleDisplayName</key><string>lolPing Lite</string>' \
+              '  <key>CFBundleIdentifier</key><string>com.spotlighterr.lolping-lite</string>' \
+              '  <key>CFBundleVersion</key><string>1.0.0</string>' \
+              '  <key>CFBundleShortVersionString</key><string>1.0.0</string>' \
+              '  <key>CFBundleExecutable</key><string>lolPingLite</string>' \
+              '  <key>CFBundlePackageType</key><string>APPL</string>' \
+              '  <key>LSUIElement</key><true/>' \
+              '  <key>NSHighResolutionCapable</key><true/>' \
+              '</dict></plist>' > "${app}/Contents/Info.plist"
+            (cd "dist-${arch}" && zip -r "../lolPingLite-macos-${arch}.zip" "lolPingLite.app")
+          }
+          make_bundle arm64 lolPingLite-arm64
+          make_bundle amd64 lolPingLite-amd64
+          make_bundle universal lolPingLite-universal
+          ls -lh lolPingLite-macos-*.zip
+
+      - name: Upload macOS Release Assets
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          files: |
+            lolPingLite-macos-universal.zip
+            lolPingLite-macos-arm64.zip
+            lolPingLite-macos-amd64.zip
