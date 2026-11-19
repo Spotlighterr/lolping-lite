@@ -8,7 +8,8 @@ I built this in pure Go (Win32) because my 16 GB laptop is already full of Chrom
 
 Grab the latest Windows build from **[Releases](https://github.com/Spotlighterr/lolping-lite/releases/latest)**:
 
-- **`lolPingLite-windows-amd64.zip`** *(recommended)* — unzip and run `lolPingLite.exe` (includes animated emote frames).
+- **`lolPingLite-Setup.exe`** *(recommended)* — Windows installer (includes animated emote frames, Start Menu/Desktop shortcut, optional auto-start, and clean uninstaller).
+- **`lolPingLite-windows-amd64.zip`** — portable version, just unzip and run `lolPingLite.exe`.
 - **`lolPingLite.exe`** — single standalone file (ping wheel + static emotes).
 
 ## How to use
