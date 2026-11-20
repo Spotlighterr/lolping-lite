@@ -182,24 +182,56 @@ func loadSlots() {
 		slot.label = names[i]
 		slot.tinted = tintPing(slot.icon)
 	}
-	slugs := []string{"unworthy_cn", "poro_snax", "sad_kitten", "cheeky_poro", "angry_kitty", "gg_heart", "bee_happy", "bee_mad", "facepalm"}
-	labels := []string{"Unworthy (Chinese text)", "Poro Snax", "Sad Kitten", "Cheeky Poro", "Angry Kitty", "GG <3", "Bee Happy", "Bee Mad", "Facepalm"}
-	for i, slug := range slugs {
-		slot := &wheelSlot{icon: roundIcon(decodePNG(mustAsset("assets/emotes/"+slug+".png"), 48, 48, false)),
-			popIcon: decodePNG(mustAsset("assets/emotes/"+slug+".png"), 150, 150, false),
-			label:   labels[i], sound: "assets/emotes/" + slug + ".wav", frames: "assets/emotes/" + slug + ".frames"}
+	reloadEmoteSlots()
+}
+
+func reloadEmoteSlots() {
+	app.emoteSlots = nil
+	app.emoteCenter = nil
+	for i := 0; i < 9; i++ {
+		spec := cfg.EmoteSlots[i]
+		if spec == "" {
+			spec = defaultEmoteSlugs[i]
+		}
+		slot := buildEmoteSlot(spec, defaultEmoteSlugs[i])
 		if i == 8 {
 			app.emoteCenter = slot
 		} else {
 			app.emoteSlots = append(app.emoteSlots, slot)
 		}
 	}
+}
 
+func applyScaleChange() {
+	if app == nil {
+		return
+	}
+	ws := currentWheelSize()
+	ps := currentPopSize()
+	if app.wheelSurf != nil && app.wheelSurf.width != ws {
+		app.dragging = false
+		app.wheelClosing = false
+		pShowWindow.Call(app.wheelHwnd, SW_HIDE)
+		app.wheelSurf.destroy()
+		app.wheelSurf = newLayeredSurface(ws, ws)
+		app.wheelSurf.buildWheelBase()
+		if app.wheelHwnd != 0 {
+			pSetWindowPos.Call(app.wheelHwnd, HWND_TOPMOST, 0, 0, uintptr(ws), uintptr(ws), SWP_NOMOVE|SWP_NOACTIVATE)
+		}
+	}
+	if app.popSurf != nil && app.popSurf.width != ps {
+		stopEffects()
+		app.popSurf.destroy()
+		app.popSurf = newLayeredSurface(ps, ps)
+		if app.popHwnd != 0 {
+			pSetWindowPos.Call(app.popHwnd, HWND_TOPMOST, 0, 0, uintptr(ps), uintptr(ps), SWP_NOMOVE|SWP_NOACTIVATE)
+		}
+	}
 }
 
 func sectorFromDelta(dx, dy float64) int {
 	dist := math.Hypot(dx, dy)
-	if dist < hubRadius*wheelSize/600 {
+	if dist < hubRadius*float64(currentWheelSize())/600.0 {
 		return -1
 	}
 	ang := math.Atan2(dy, dx)*180.0/math.Pi + 90.0 + 22.5
@@ -316,7 +348,8 @@ func renderWheelNow() {
 	if app.wheelClosing {
 		opacity = app.wheelOpacity * (1 - t)
 	}
-	app.wheelSurf.presentAnimated(app.wheelHwnd, app.anchorX-wheelSize/2, app.anchorY-wheelSize/2, opacity, .85+.15*opacity)
+	ws := int32(currentWheelSize())
+	app.wheelSurf.presentAnimated(app.wheelHwnd, app.anchorX-ws/2, app.anchorY-ws/2, opacity, .85+.15*opacity)
 	if app.wheelClosing && t >= 1 {
 		pKillTimer.Call(app.trayHwnd, wheelTimerID)
 		pShowWindow.Call(app.wheelHwnd, SW_HIDE)
@@ -517,19 +550,21 @@ func main() {
 		return
 	}
 
+	loadConfig()
+	ws := currentWheelSize()
+	ps := currentPopSize()
 	hInst, _, _ := pGetModuleHandleW.Call(0)
 	app = &appState{
 		hInstance: hInst,
 		enabled:   true,
 		activeIdx: -1,
-		wheelSurf: newLayeredSurface(wheelSize, wheelSize),
-		popSurf:   newLayeredSurface(popSize, popSize),
+		wheelSurf: newLayeredSurface(ws, ws),
+		popSurf:   newLayeredSurface(ps, ps),
 		vsyncWake: make(chan struct{}, 1),
 		vsyncStop: make(chan struct{}),
 	}
 	go runVsyncPacer()
 	defer close(app.vsyncStop)
-	loadConfig()
 	loadSlots()
 	app.wheelSurf.buildWheelBase()
 	prewarmShadows()
@@ -562,8 +597,8 @@ func main() {
 	app.trayHwnd, _, _ = pCreateWindowExW.Call(0, uintptr(unsafe.Pointer(clsName)), uintptr(unsafe.Pointer(title)), 0, 0, 0, 0, 0, 0, 0, hInst, 0)
 
 	exOverlay := uintptr(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE | WS_EX_TRANSPARENT)
-	app.wheelHwnd, _, _ = pCreateWindowExW.Call(exOverlay, uintptr(unsafe.Pointer(clsName)), 0, WS_POPUP, 0, 0, wheelSize, wheelSize, 0, 0, hInst, 0)
-	app.popHwnd, _, _ = pCreateWindowExW.Call(exOverlay, uintptr(unsafe.Pointer(clsName)), 0, WS_POPUP, 0, 0, popSize, popSize, 0, 0, hInst, 0)
+	app.wheelHwnd, _, _ = pCreateWindowExW.Call(exOverlay, uintptr(unsafe.Pointer(clsName)), 0, WS_POPUP, 0, 0, uintptr(ws), uintptr(ws), 0, 0, hInst, 0)
+	app.popHwnd, _, _ = pCreateWindowExW.Call(exOverlay, uintptr(unsafe.Pointer(clsName)), 0, WS_POPUP, 0, 0, uintptr(ps), uintptr(ps), 0, 0, hInst, 0)
 	if app.trayHwnd == 0 || app.wheelHwnd == 0 || app.popHwnd == 0 {
 		panic("CreateWindowExW failed")
 	}

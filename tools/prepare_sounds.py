@@ -31,7 +31,13 @@ free_ctx = fn('avcodec_free_context', None, c.POINTER(P))
 close_input = fn('avformat_close_input', None, c.POINTER(P))
 
 for slug in SLUGS:
+    out_wav = ROOT / 'assets/emotes' / (slug + '.wav')
+    if out_wav.exists():
+        continue
     path = ROOT / '.upstream/assets/emotes' / (slug + '.ogg')
+    if not path.exists():
+        print('MISSING ogg:', slug)
+        continue
     raw = path.read_bytes()
     ident = raw.index(b'OpusHead')
     channels = raw[ident+9]

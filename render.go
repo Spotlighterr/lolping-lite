@@ -6,7 +6,8 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/png"
+	_ "image/jpeg"
+	_ "image/png"
 	"math"
 	"syscall"
 	"unsafe"
@@ -83,9 +84,9 @@ func decodeAndResizePNG(data []byte, tw, th int) *premultImg {
 }
 
 func decodePNG(data []byte, tw, th int, trim bool) *premultImg {
-	src, err := png.Decode(bytes.NewReader(data))
+	src, _, err := image.Decode(bytes.NewReader(data))
 	if err != nil {
-		panic(err)
+		return &premultImg{tw, th, make([]byte, tw*th*4)}
 	}
 	bounds := src.Bounds()
 	ink := image.Rectangle{}
@@ -784,6 +785,7 @@ func (s *layeredSurface) drawPop(icon *premultImg, p float64, r, g, b uint8, emo
 		return
 	}
 	cx, cy := float64(s.width)/2, float64(s.height)/2
+	uiScale := float64(s.width) / 320.0
 	if emote { // Custom/placeholder envelope; bundled emotes use their baked timeline.
 		t := p * 3
 		scale := keyLerp(t, []float64{0, .15, .25}, []float64{0, 1.15, 1}, easeOut)
@@ -794,12 +796,12 @@ func (s *layeredSurface) drawPop(icon *premultImg, p float64, r, g, b uint8, emo
 			fade = 1 - q
 		}
 		phase := math.Mod(t, 1.4) / 1.4
-		bob := keyLerp(phase, []float64{0, .25, .75, 1}, []float64{0, -4, 4, 0}, easeInOut)
-		s.pingArt(icon, cx, cy+bob, 150/float64(icon.w)*scale, fade, 255, 255, 255)
+		bob := keyLerp(phase, []float64{0, .25, .75, 1}, []float64{0, -4, 4, 0}, easeInOut) * uiScale
+		s.pingArt(icon, cx, cy+bob, 150*uiScale/float64(icon.w)*scale, fade, 255, 255, 255)
 		return
 	}
 	t := p * 3.2
-	size := 110.0
+	size := 110.0 * uiScale
 	// Ground ellipse: closest-side radial-gradient and per-segment ease-out.
 	ground := keyLerp(p, []float64{0, .1, .85, 1}, []float64{0, .75, .55, 0}, easeOut)
 	for y := int(cy + size*.2); y < int(cy+size*.44); y++ {
@@ -914,9 +916,9 @@ func (s *layeredSurface) drawPop(icon *premultImg, p float64, r, g, b uint8, emo
 			shakeX = keyLerp(q, []float64{0, .25, .5, .75, 1}, []float64{0, -3, 3, -2, 0}, unit)
 			shakeY = keyLerp(q, []float64{0, .25, .5, .75, 1}, []float64{0, 2, -2, -1, 0}, unit)
 		}
-		y := artY + shakeY + bobAt(t, .5, 1.6, 5)
-		s.pingArt(icon, cx+disp+shakeX, y-disp, 1, fade*slide, r, g, b)
-		s.pingArt(second[0], cx-disp+shakeX, y-disp, 1, fade*slide, r, g, b)
+		y := artY + shakeY*uiScale + bobAt(t, .5, 1.6, 5)*uiScale
+		s.pingArt(icon, cx+disp+shakeX*uiScale, y-disp, uiScale, fade*slide, r, g, b)
+		s.pingArt(second[0], cx-disp+shakeX*uiScale, y-disp, uiScale, fade*slide, r, g, b)
 		if t >= .2 && t < .55 {
 			q := (t - .2) / .35
 			alpha := keyLerp(q, []float64{0, .3, 1}, []float64{0, 1, 0}, easeOut) * fade
@@ -934,9 +936,9 @@ func (s *layeredSurface) drawPop(icon *premultImg, p float64, r, g, b uint8, emo
 		}
 	} else {
 		ease := func(q float64) float64 { return cssEase(q, .2, 1.6, .4, 1) }
-		scale := keyLerp(t, []float64{0, .168, .28}, []float64{.4, 1.15, 1}, ease)
+		scale := keyLerp(t, []float64{0, .168, .28}, []float64{.4, 1.15, 1}, ease) * uiScale
 		opacity := keyLerp(t, []float64{0, .168, .28}, []float64{0, 1, 1}, ease)
-		s.pingArt(icon, cx, artY+bobAt(t, .3, 1.6, 5), scale, fade*unit(opacity), r, g, b)
+		s.pingArt(icon, cx, artY+bobAt(t, .3, 1.6, 5)*uiScale, scale, fade*unit(opacity), r, g, b)
 	}
 }
 

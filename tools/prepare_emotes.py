@@ -8,11 +8,16 @@ import zlib
 from PIL import Image
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SLUGS = ['unworthy_cn', 'poro_snax', 'sad_kitten', 'cheeky_poro',
-         'angry_kitty', 'gg_heart', 'bee_happy', 'bee_mad', 'facepalm']
+SLUGS = sorted(p.stem for p in (ROOT / 'assets/emotes').glob('*.png'))
 
 for slug in (SLUGS if __name__ == "__main__" else []):
+    dst = ROOT / 'assets/emotes' / (slug + '.frames')
+    if dst.exists():
+        continue
     src = ROOT / '.upstream/assets/emotes' / (slug + '.webp')
+    if not src.exists():
+        print('MISSING webp:', slug)
+        continue
     im = Image.open(src)
     frames = []
     elapsed = 0

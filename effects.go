@@ -64,15 +64,16 @@ func acquirePopSlot() *popSlot {
 		popPool = append(popPool, ps)
 		return ps
 	}
+	psz := currentPopSize()
 	cls, _ := syscall.UTF16PtrFromString("lolPingLiteClass")
 	hwnd, _, _ := pCreateWindowExW.Call(
 		WS_EX_LAYERED|WS_EX_TOPMOST|WS_EX_TOOLWINDOW|WS_EX_NOACTIVATE|WS_EX_TRANSPARENT,
-		uintptr(unsafe.Pointer(cls)), 0, WS_POPUP, 0, 0, popSize, popSize, 0, 0, app.hInstance, 0,
+		uintptr(unsafe.Pointer(cls)), 0, WS_POPUP, 0, 0, uintptr(psz), uintptr(psz), 0, 0, app.hInstance, 0,
 	)
 	if hwnd == 0 {
 		return nil
 	}
-	ps := &popSlot{hwnd: hwnd, surface: newLayeredSurface(popSize, popSize), inUse: true}
+	ps := &popSlot{hwnd: hwnd, surface: newLayeredSurface(psz, psz), inUse: true}
 	popPool = append(popPool, ps)
 	return ps
 }
@@ -116,6 +117,7 @@ func startEffect(slot *wheelSlot, emote bool) {
 	if ps == nil {
 		return
 	}
+	psz := int32(currentPopSize())
 	e := &popEffect{
 		poolSlot: ps,
 		hwnd:     ps.hwnd,
@@ -123,8 +125,8 @@ func startEffect(slot *wheelSlot, emote bool) {
 		slot:     slot,
 		emote:    emote,
 		start:    time.Now(),
-		x:        app.anchorX - popSize/2,
-		y:        app.anchorY - popSize/2,
+		x:        app.anchorX - psz/2,
+		y:        app.anchorY - psz/2,
 	}
 	if emote {
 		e.animation = openEmote(slot.frames)
@@ -138,7 +140,8 @@ func startEffect(slot *wheelSlot, emote bool) {
 func (e *popEffect) drawOnly(elapsed float64) {
 	if e.emote && e.animation != nil {
 		e.surface.clear()
-		e.surface.blitScaled(e.animation.at(elapsed), popSize/2, popSize/2, 187.5/188, 1)
+		sc := (187.5 / 188.0) * (float64(e.surface.width) / 320.0)
+		e.surface.blitScaled(e.animation.at(elapsed), float64(e.surface.width)/2, float64(e.surface.height)/2, sc, 1)
 	} else {
 		duration := 3.2
 		if e.emote {
